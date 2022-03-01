@@ -299,6 +299,13 @@
     "@types/mime" "^1"
     "@types/node" "*"
 
+"@types/simple-peer@^9.11.4":
+  version "9.11.4"
+  resolved "https://registry.yarnpkg.com/@types/simple-peer/-/simple-peer-9.11.4.tgz#1c358fcd9cb58318e27928ee90289fb0e3f50070"
+  integrity sha512-Elje14YvM47k+XEaoyRAeUSvZN7TOLWYL233QCckUaXjT4lRESHnYs0iOK2JoosO5DnCvWu/0Vpl9qnw4KCLWw==
+  dependencies:
+    "@types/node" "*"
+
 "@types/socket.io@^3.0.2":
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/@types/socket.io/-/socket.io-3.0.2.tgz#606c9639e3f93bb8454cba8f5f0a283d47917759"

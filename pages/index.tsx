@@ -7,65 +7,118 @@ import {
   MdMicOff,
   MdGroupAdd,
 } from "react-icons/md";
-import io from "socket.io-client";
+import socketIOClient from "socket.io-client";
+import { useUserMedia } from "./hooks/useUserMedia";
+import Peer, { Instance } from "simple-peer";
 
-
+const ENDPOINT = "http://localhost:5001";
 
 const Home: NextPage = () => {
-  // const socket = io("http://localhost:5000");
+  const socket = socketIOClient(ENDPOINT);
 
   const [name, setName] = useState("");
-  const [stream, setStream] = useState<undefined | MediaStream>();
-  const [isCamOpened, setIsCamOpened] = useState(false);
-  const [isAudioOpened, setIsAudioOpened] = useState(false);
+  const [isCamOpened, setIsCamOpened] = useState(true);
+  const [isAudioOpened, setIsAudioOpened] = useState(true);
   const [myCallId, setMyCallId] = useState("");
+  const [idToCall, setIdToCall] = useState("");
+  const [callAccepted, setCallAccepted] = useState(false);
+  const [caller, setCaller] = useState("");
+  const [callerSignal, setCallerSignal] = useState("");
+  const [receivingCall, setReceivingCall] = useState(false);
 
   const myVideo = useRef<HTMLVideoElement>(null);
+  const userVideo = useRef<HTMLVideoElement>(null);
+  const connectionRef = useRef<Instance>();
+  const mediaStream = useUserMedia();
 
   useEffect(() => {
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        setStream(stream);
-        if (myVideo && myVideo.current) {
-          myVideo.current.srcObject = stream;
-          setIsCamOpened(true);
-          setIsAudioOpened(false);
-        }
+    if (myVideo && myVideo.current) {
+      //@ts-ignore
+      myVideo.current.srcObject = mediaStream;
+    }
+
+    socket.on("me", (id) => {
+      setMyCallId(id);
+    });
+
+    socket.on("callUser", (data) => {
+      setReceivingCall(true);
+      setCaller(data.from);
+      setName(data.name);
+      setCallerSignal(data.signal);
+    });
+  }, [mediaStream]);
+
+  const callUser = (id: string) => {
+    console.log("id do user: ", id);
+    console.log("id meu: ", myCallId);
+    const socketIO = socketIOClient(ENDPOINT);
+    const peer = new Peer({
+      initiator: true,
+      trickle: false,
+      stream: mediaStream,
+    });
+    peer.on("signal", (data: any) => {
+      socketIO.emit("callUser", {
+        userToCall: id,
+        signalData: data,
+        from: myCallId,
+        name: name,
       });
-  }, []);
+    });
+    peer.on("stream", (stream: any) => {
+      if (userVideo) {
+        console.log('vou botar meu video la')
+        //@ts-ignore
+        userVideo.current.srcObject = stream;
+      }
+    });
+    socket.on("callAccepted", (signal) => {
+      setCallAccepted(true);
+      peer.signal(signal);
+    });
 
-  const copyMyCallId = async () => {
-
-    // socket.on("me", (id) => {
-    //   setMyCallId(id);
-    //   navigator.clipboard.writeText(id);
-    // });
+    connectionRef.current = peer;
   };
+
+  const answerCall = () => {
+    console.log('ta inu')
+    const socketIO = socketIOClient(ENDPOINT);
+    
+    const peer = new Peer({
+      initiator: false,
+      trickle: false,
+      stream: mediaStream,
+    });
+    peer.on("signal", (data) => {
+      socketIO.emit("answerCall", { signal: data, to: caller });
+    });
+    peer.on("stream", (stream) => {
+      
+      if (userVideo.current) {
+        userVideo.current.srcObject = stream;
+      }
+    });
+
+    peer.signal(callerSignal);
+    connectionRef.current = peer;
+  };
+
+  const copyMyCallId = () => navigator.clipboard.writeText(myCallId);
 
   const toggleAudio = () => {
     if (!myVideo.current) return;
     const isAudioEnabled = myVideo.current.muted;
-    console.log("isAudioEnabled: ", isAudioEnabled);
-    if (isAudioEnabled) {
-      myVideo.current.muted = false;
-      setIsAudioOpened(false);
-    } else {
-      myVideo.current.muted = true;
-      setIsAudioOpened(true);
-    }
+    setIsAudioOpened(!isAudioEnabled);
+    myVideo.current.muted = !isAudioEnabled;
   };
 
   const toggleCam = () => {
-    if (!stream) return;
-    const isCamEnabled = stream.getVideoTracks()[0].enabled;
-    if (isCamEnabled) {
-      stream.getVideoTracks()[0].enabled = false;
-      setIsCamOpened(false);
-    } else {
-      stream.getVideoTracks()[0].enabled = true;
-      setIsCamOpened(true);
-    }
+    if (!mediaStream) return;
+    const isCamEnabled = mediaStream.getVideoTracks()[0].enabled;
+    if (isCamEnabled) mediaStream.getVideoTracks()[0].enabled = false;
+    else mediaStream.getVideoTracks()[0].enabled = true;
+    setIsCamOpened(!isCamOpened);
   };
 
   return (
@@ -77,10 +130,15 @@ const Home: NextPage = () => {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <input type="text" placeholder="ID to call" />
-      </section>
-      <section className="video-details">
-        {stream && <video playsInline muted ref={myVideo} autoPlay />}
+        <input
+          type="text"
+          placeholder="ID to call"
+          value={idToCall}
+          onChange={(e) => setIdToCall(e.target.value)}
+        />
+        <button type="button" onClick={() => callUser(idToCall)}>
+          Call
+        </button>
         <div className="video-actions">
           <button type="button" onClick={toggleAudio}>
             {isAudioOpened ? <MdMic size={20} /> : <MdMicOff size={20} />}
@@ -96,6 +154,19 @@ const Home: NextPage = () => {
             <MdGroupAdd size={20} />
           </button>
         </div>
+        <div>
+          {receivingCall && !callAccepted ? (
+            <div className="caller">
+              <h1>{name} is calling...</h1>
+              <button onClick={answerCall}>Answer</button>
+            </div>
+          ) : null}
+        </div>
+        <p className="my-call-id">{myCallId}</p>
+      </section>
+      <section className="video-details">
+        {mediaStream && <video playsInline ref={myVideo} autoPlay />}
+        {callAccepted && <video playsInline ref={userVideo} autoPlay />}
       </section>
     </div>
   );

@@ -1,6 +1,6 @@
 import express from "express";
 import http from "http";
-import {Socket} from 'socket.io'
+import { Socket } from "socket.io";
 const app = express();
 const server = http.createServer(app);
 
@@ -19,6 +19,11 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("callUser", (data) => {
+    console.log("callUser: ", {
+      signal: data.signalData,
+      from: data.from,
+      name: data.name,
+    });
     io.to(data.userToCall).emit("callUser", {
       signal: data.signalData,
       from: data.from,
@@ -27,9 +32,13 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("answerCall", (data) => {
+    console.log("answerCall: ", {
+      to: data.to,
+      signal: data.signal,
+    });
     io.to(data.to).emit("callAccepted", data.signal);
   });
 });
 
 server.listen(5001, () => console.log("server is running on port 5001"));
-export default server
+export default server;
