@@ -2,8 +2,8 @@ html,
 body {
   padding: 0;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans,
+    Helvetica Neue, sans-serif;
 }
 
 a {
@@ -13,4 +13,64 @@ a {
 
 * {
   box-sizing: border-box;
+}
+
+.main {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+}
+
+.room-details {
+  padding: 32px;
+  height: 100%;
+  width: 40%;
+  background-color: #28917a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-details input {
+  height: 42px;
+  width: 320px;
+  border-radius: 4px;
+  outline: none;
+  border: none;
+  padding: 16px 8px;
+  margin: 16px 0;
+}
+
+.video-details {
+  height: 100%;
+  width: 60%;
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.video-details video {
+  width: 610px;
+  height: 562px;
+}
+
+.video-details .video-actions {
+  width: 200px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.video-actions button {
+  width: 48px;
+  height: 48px;
+  background-color: #fff;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+.video-actions button svg{
+color: #2F665A;
 }
